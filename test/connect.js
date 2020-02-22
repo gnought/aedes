@@ -4,7 +4,7 @@ const { test } = require('tap')
 const http = require('http')
 const ws = require('websocket-stream')
 const mqtt = require('mqtt')
-const { setup, connect, delay } = require('./helper')
+const { setup, connect, noError } = require('./helper')
 const aedes = require('../')
 
 ;[{ ver: 3, id: 'MQIsdp' }, { ver: 4, id: 'MQTT' }].forEach(function (ele) {
@@ -441,86 +441,78 @@ test('reject clients with wrong protocol name', function (t) {
   })
 })
 
-test('After first CONNECT Packet, others are queued until \'connect\' event', function (t) {
-  t.plan(2)
+test('Any queued messages after first CONNECT will be consumed once when broker emits clientReady event', function (t) {
+  const queued = 15
+  t.plan(queued + 3)
 
-  const queueLimit = 50
-  const broker = aedes({ queueLimit })
-  t.tearDown(broker.close.bind(broker))
-
-  const publishP = {
+  var published = 0
+  var publishP = {
     cmd: 'publish',
     topic: 'hello',
     payload: Buffer.from('world'),
     qos: 0,
-    retain: false
+    retain: false,
+    dup: false
   }
 
-  const connectP = {
-    cmd: 'connect',
-    protocolId: 'MQTT',
-    protocolVersion: 4,
-    clean: true,
-    clientId: 'abcde',
-    keepalive: 0
-  }
+  var broker = aedes({
+    preConnect: (client, done) => {
+      t.ok(client.conn.isPaused())
+      t.equal(published, queued, 'store all offlined messages')
+      done(null, true)
+    }
+  })
+  t.tearDown(broker.close.bind(broker))
 
-  const s = setup(broker)
-  s.inStream.write(connectP)
+  var s = noError(connect(setup(broker)), t)
 
-  process.once('warning', e => t.fail('Memory leak detected'))
+  broker.on('clientReady', function (client) {
+    t.notOk(client.conn.isPaused())
+  })
+  s.broker.mq.on('hello', function (packet, cb) {
+    delete packet.brokerId
+    delete packet.brokerCounter
+    t.deepEqual(packet, publishP, 'packet matches')
+    cb()
+  })
 
-  for (let i = 0; i < queueLimit; i++) {
+  for (; published < queued; published++) {
     s.inStream.write(publishP)
   }
-
-  broker.on('client', function (client) {
-    t.equal(client._parser._queue.length, queueLimit, 'Packets have been queued')
-
-    client.once('connected', () => {
-      t.equal(client._parser._queue, null, 'Queue is empty')
-      s.conn.destroy()
-    })
-  })
 })
 
-test('Test queue limit', function (t) {
-  t.plan(1)
+test('Any queued messages after first CONNECT will be dropped once when authentication fails', function (t) {
+  t.plan(2)
 
-  const queueLimit = 50
-  const broker = aedes({ queueLimit })
-  t.tearDown(broker.close.bind(broker))
-
-  const publishP = {
+  var published = 0
+  var publishP = {
     cmd: 'publish',
     topic: 'hello',
     payload: Buffer.from('world'),
     qos: 0,
-    retain: false
+    retain: false,
+    dup: false
   }
+  const queued = 15
 
-  const connectP = {
-    cmd: 'connect',
-    protocolId: 'MQTT',
-    protocolVersion: 4,
-    clean: true,
-    clientId: 'abcde',
-    keepalive: 0
-  }
+  var broker = aedes({
+    authenticate: (client, username, password, done) => {
+      t.ok(client.conn.isPaused())
+      t.equal(published, queued, 'store all offlined messages')
+      done(null, false)
+    }
+  })
+  t.tearDown(broker.close.bind(broker))
 
-  const s = setup(broker)
-  s.inStream.write(connectP)
+  var s = connect(setup(broker))
 
-  process.once('warning', e => t.fail('Memory leak detected'))
+  s.broker.mq.on('hello', function (packet, cb) {
+    t.fail('no queued messages are consumed')
+  })
 
-  for (let i = 0; i < queueLimit + 1; i++) {
+  for (; published < queued; published++) {
     s.inStream.write(publishP)
   }
-
-  broker.on('connectionError', function (conn, err) {
-    t.equal(err.message, 'Client queue limit reached', 'Queue error is thrown')
-    s.conn.destroy()
-  })
 })
 
 ;[['fail with no error msg', 3, null, false], ['succeed with no error msg', 9, null, true], ['fail with error msg', 6, new Error('connection banned'), false], ['succeed with error msg', 6, new Error('connection banned'), true]].forEach(function (ele, idx) {
