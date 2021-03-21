@@ -304,7 +304,7 @@ test('does not deliver a will without authentication', function (t) {
   // willConnect populates opts with a will
   const s = willConnect(
     setup(aedes({
-      authenticate: (client, username, password, callback) => {
+      authenticate: (client, packet, callback) => {
         authenticated = true
         callback(new Error(), false)
       }
@@ -330,7 +330,7 @@ test('does not deliver will if broker is closed during authentication', function
   const opts = { keepalive: 1 }
 
   const broker = aedes({
-    authenticate: function (client, username, password, callback) {
+    authenticate: function (client, packet, callback) {
       setTimeout(function () {
         callback(null, true)
       })

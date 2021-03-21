@@ -433,7 +433,7 @@ test('connect handler calls done when preConnect throws error', function (t) {
   t.plan(1)
 
   const broker = aedes({
-    preConnect: function (client, packet, done) {
+    preConnect: function (client, done) {
       done(Error('error in preconnect'))
     }
   })
@@ -491,7 +491,7 @@ test('reject second CONNECT Packet sent while first CONNECT still in preConnect 
 
   let i = 0
   const broker = aedes({
-    preConnect: function (client, packet, done) {
+    preConnect: function (client, done) {
       const ms = i++ === 0 ? 2000 : 500
       setTimeout(function () {
         done(null, true)
@@ -638,7 +638,7 @@ test('Test queue limit', function (t) {
     t.plan(plan)
 
     const broker = aedes({
-      preConnect: function (client, packet, done) {
+      preConnect: function (client, done) {
         t.ok(client.connecting)
         t.notOk(client.connected)
         t.equal(client.version, null)

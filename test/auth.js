@@ -13,10 +13,10 @@ test('authenticate successfully a client with username and password', function (
   const s = noError(setup())
   t.tearDown(s.broker.close.bind(s.broker))
 
-  s.broker.authenticate = function (client, username, password, cb) {
+  s.broker.authenticate = function (client, packet, cb) {
     t.ok(client instanceof Client, 'client is there')
-    t.equal(username, 'my username', 'username is there')
-    t.deepEqual(password, Buffer.from('my pass'), 'password is there')
+    t.equal(packet.username, 'my username', 'username is there')
+    t.deepEqual(packet.password, Buffer.from('my pass'), 'password is there')
     cb(null, true)
   }
 
@@ -52,10 +52,10 @@ test('authenticate unsuccessfully a client with username and password', function
   const s = setup()
   t.tearDown(s.broker.close.bind(s.broker))
 
-  s.broker.authenticate = function (client, username, password, cb) {
+  s.broker.authenticate = function (client, packet, cb) {
     t.ok(client instanceof Client, 'client is there')
-    t.equal(username, 'my username', 'username is there')
-    t.deepEqual(password, Buffer.from('my pass'), 'password is there')
+    t.equal(packet.username, 'my username', 'username is there')
+    t.deepEqual(packet.password, Buffer.from('my pass'), 'password is there')
     cb(null, false)
   }
 
@@ -103,10 +103,10 @@ test('authenticate errors', function (t) {
   const s = setup()
   t.tearDown(s.broker.close.bind(s.broker))
 
-  s.broker.authenticate = function (client, username, password, cb) {
+  s.broker.authenticate = function (client, packet, cb) {
     t.ok(client instanceof Client, 'client is there')
-    t.equal(username, 'my username', 'username is there')
-    t.deepEqual(password, Buffer.from('my pass'), 'password is there')
+    t.equal(packet.username, 'my username', 'username is there')
+    t.deepEqual(packet.password, Buffer.from('my pass'), 'password is there')
     cb(new Error('this should happen!'))
   }
 
@@ -155,10 +155,10 @@ test('authentication error when return code 1 (unacceptable protocol version) is
   const s = setup()
   t.tearDown(s.broker.close.bind(s.broker))
 
-  s.broker.authenticate = function (client, username, password, cb) {
+  s.broker.authenticate = function (client, packet, cb) {
     t.ok(client instanceof Client, 'client is there')
-    t.equal(username, 'my username', 'username is there')
-    t.deepEqual(password, Buffer.from('my pass'), 'password is there')
+    t.equal(packet.username, 'my username', 'username is there')
+    t.deepEqual(packet.password, Buffer.from('my pass'), 'password is there')
     const error = new Error('Auth error')
     error.returnCode = 1
     cb(error, null)
@@ -209,10 +209,10 @@ test('authentication error when return code 2 (identifier rejected) is passed', 
   const s = setup()
   t.tearDown(s.broker.close.bind(s.broker))
 
-  s.broker.authenticate = function (client, username, password, cb) {
+  s.broker.authenticate = function (client, packet, cb) {
     t.ok(client instanceof Client, 'client is there')
-    t.equal(username, 'my username', 'username is there')
-    t.deepEqual(password, Buffer.from('my pass'), 'password is there')
+    t.equal(packet.username, 'my username', 'username is there')
+    t.deepEqual(packet.password, Buffer.from('my pass'), 'password is there')
     const error = new Error('Auth error')
     error.returnCode = 2
     cb(error, null)
@@ -263,10 +263,10 @@ test('authentication error when return code 3 (Server unavailable) is passed', f
   const s = setup()
   t.tearDown(s.broker.close.bind(s.broker))
 
-  s.broker.authenticate = function (client, username, password, cb) {
+  s.broker.authenticate = function (client, packet, cb) {
     t.ok(client instanceof Client, 'client is there')
-    t.equal(username, 'my username', 'username is there')
-    t.deepEqual(password, Buffer.from('my pass'), 'password is there')
+    t.equal(packet.username, 'my username', 'username is there')
+    t.deepEqual(packet.password, Buffer.from('my pass'), 'password is there')
     const error = new Error('Auth error')
     error.returnCode = 3
     cb(error, null)
@@ -317,10 +317,10 @@ test('authentication error when return code 4 (bad user or password) is passed',
   const s = setup()
   t.tearDown(s.broker.close.bind(s.broker))
 
-  s.broker.authenticate = function (client, username, password, cb) {
+  s.broker.authenticate = function (client, packet, cb) {
     t.ok(client instanceof Client, 'client is there')
-    t.equal(username, 'my username', 'username is there')
-    t.deepEqual(password, Buffer.from('my pass'), 'password is there')
+    t.equal(packet.username, 'my username', 'username is there')
+    t.deepEqual(packet.password, Buffer.from('my pass'), 'password is there')
     const error = new Error('Auth error')
     error.returnCode = 4
     cb(error, null)
@@ -371,10 +371,10 @@ test('authentication error when non numeric return code is passed', function (t)
   const s = setup()
   t.tearDown(s.broker.close.bind(s.broker))
 
-  s.broker.authenticate = function (client, username, password, cb) {
+  s.broker.authenticate = function (client, packet, cb) {
     t.ok(client instanceof Client, 'client is there')
-    t.equal(username, 'my username', 'username is there')
-    t.deepEqual(password, Buffer.from('my pass'), 'password is there')
+    t.equal(packet.username, 'my username', 'username is there')
+    t.deepEqual(packet.password, Buffer.from('my pass'), 'password is there')
     const error = new Error('Non numeric error codes')
     error.returnCode = 'return Code'
     cb(error, null)
@@ -463,11 +463,11 @@ test('authorize waits for authenticate', function (t) {
   const s = setup()
   t.tearDown(s.broker.close.bind(s.broker))
 
-  s.broker.authenticate = function (client, username, password, cb) {
+  s.broker.authenticate = function (client, packet, cb) {
     t.ok(client instanceof Client, 'client is there')
     process.nextTick(function () {
-      t.equal(username, 'my username', 'username is there')
-      t.deepEqual(password, Buffer.from('my pass'), 'password is there')
+      t.equal(packet.username, 'my username', 'username is there')
+      t.deepEqual(packet.password, Buffer.from('my pass'), 'password is there')
       client.authenticated = true
       cb(null, true)
     })
@@ -837,8 +837,8 @@ test('failed authentication does not disconnect other client with same clientId'
   const s = setup(broker)
   const s0 = setup(broker)
 
-  broker.authenticate = function (client, username, password, cb) {
-    cb(null, password.toString() === 'right')
+  broker.authenticate = function (client, packet, cb) {
+    cb(null, packet.password.toString() === 'right')
   }
 
   s0.inStream.write({
@@ -905,8 +905,8 @@ test('unauthorized connection should not unregister the correct one with same cl
   t.plan(4)
 
   const broker = aedes({
-    authenticate: function (client, username, password, callback) {
-      if (username === 'correct') {
+    authenticate: function (client, packet, callback) {
+      if (packet.username === 'correct') {
         callback(null, true)
       } else {
         const error = new Error()
@@ -942,10 +942,10 @@ test('set authentication method in config options', function (t) {
   t.plan(5)
 
   const s = setup(aedes({
-    authenticate: function (client, username, password, cb) {
+    authenticate: function (client, packet, cb) {
       t.ok(client instanceof Client, 'client is there')
-      t.equal(username, 'my username', 'username is there')
-      t.deepEqual(password, Buffer.from('my pass'), 'password is there')
+      t.equal(packet.username, 'my username', 'username is there')
+      t.deepEqual(packet.password, Buffer.from('my pass'), 'password is there')
       cb(null, false)
     }
   }))

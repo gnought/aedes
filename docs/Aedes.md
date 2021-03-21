@@ -24,8 +24,8 @@
   - [aedes.unsubscribe (topic, deliverfunc, callback)](#aedesunsubscribe-topic-deliverfunc-callback)
   - [aedes.publish (packet, callback)](#aedespublish-packet-callback)
   - [aedes.close ([callback])](#aedesclose-callback)
-  - [Handler: preConnect (client, packet, callback)](#handler-preconnect-client-packet-callback)
-  - [Handler: authenticate (client, username, password, callback)](#handler-authenticate-client-username-password-callback)
+  - [Handler: preConnect (client, callback)](#handler-preconnect-client-callback)
+  - [Handler: authenticate (client, packet, callback)](#handler-authenticate-client-packet-callback)
   - [Handler: authorizePublish (client, packet, callback)](#handler-authorizepublish-client-packet-callback)
   - [Handler: authorizeSubscribe (client, subscription, callback)](#handler-authorizesubscribe-client-subscription-callback)
   - [Handler: authorizeForward (client, packet)](#handler-authorizeforward-client-packet)
@@ -224,15 +224,14 @@ Close aedes server and disconnects all clients.
 
 `callback` will be invoked when server is closed.
 
-## Handler: preConnect (client, packet, callback)
+## Handler: preConnect (client, callback)
 
 - client: [`<Client>`](./Client.md)
-- packet: `<object>` [`CONNECT`][CONNECT]
 - callback: `<Function>` `(error, successful) => void`
   - error `<Error>` | `null`
   - successful `<boolean>`
 
-Invoked when server receives a valid [`CONNECT`][CONNECT] packet. The packet can be modified.
+Invoked when server receives a valid [`CONNECT`][CONNECT] packet.
 
 `client` object is in default state. If invoked `callback` with no errors and `successful` be `true`, server will continue to establish a session.
 
@@ -245,42 +244,41 @@ Some Use Cases:
 3. IP blacklisting
 
 ```js
-aedes.preConnect = function(client, packet, callback) {
+aedes.preConnect = function(client, callback) {
   callback(null, client.conn.remoteAddress === '::1') {
 }
 ```
 
 ```js
-aedes.preConnect = function(client, packet, callback) {
+aedes.preConnect = function(client, callback) {
   callback(new Error('connection error'), client.conn.remoteAddress !== '::1') {
 }
 ```
 
-## Handler: authenticate (client, username, password, callback)
+## Handler: authenticate (client, packet, callback)
 
 - client: [`<Client>`](./Client.md)
-- username: `<string>`
-- password: `<Buffer>`
+- packet: `<object>` [`CONNECT`][CONNECT]
 - callback: `<Function>` `(error, successful) => void`
   - error `<Error>` | `null`
   - successful `<boolean>`
 
-Invoked after `preConnect`.
+Invoked after `preConnect`. Used for user-defined authentication flow.
 
-Server parses the [`CONNECT`][CONNECT] packet, initializes `client` object which set `client.id` to match the one in [`CONNECT`][CONNECT] packet and extract `username` and `password` as parameters for user-defined authentication flow.
+Server parses the [`CONNECT`][CONNECT] packet, initializes `client` object which set `client.id` to match the one in [`CONNECT`][CONNECT] if packet ClientId is set, or Aedes generates one.
 
 If invoked `callback` with no errors and `successful` be `true`, server authenticates `client` and continues to setup the client session.
 
 If authenticated, server acknowledges a [`CONNACK`][CONNACK] with `returnCode=0`, otherwise `returnCode=5`. Users could define the value between `2` and `5` by defining a `returnCode` property in `error` object.
 
 ```js
-aedes.authenticate = function (client, username, password, callback) {
-  callback(null, username === 'matteo')
+aedes.authenticate = function (client, packet, callback) {
+  callback(null, packet.username === 'matteo')
 }
 ```
 
 ```js
-aedes.authenticate = function (client, username, password, callback) {
+aedes.authenticate = function (client, packet, callback) {
   var error = new Error('Auth error')
   error.returnCode = 4
   callback(error, null)

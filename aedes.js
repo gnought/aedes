@@ -15,6 +15,10 @@ const Client = require('./lib/client')
 
 module.exports = Aedes.Server = Aedes
 
+// module.exports = Aedes
+// module.exports.aedes = Aedes
+// module.exports.default = Aedes
+
 const defaultOptions = {
   concurrency: 100,
   heartbeatInterval: 60000, // 1 minute
@@ -22,6 +26,7 @@ const defaultOptions = {
   decodeProtocol: null,
   preConnect: defaultPreConnect,
   authenticate: defaultAuthenticate,
+  authorizeConnect: null,
   authorizePublish: defaultAuthorizePublish,
   authorizeSubscribe: defaultAuthorizeSubscribe,
   authorizeForward: defaultAuthorizeForward,
@@ -66,6 +71,7 @@ function Aedes (opts) {
 
   this.preConnect = opts.preConnect
   this.authenticate = opts.authenticate
+  this.authorizeConnect = opts.authorizeConnect
   this.authorizePublish = opts.authorizePublish
   this.authorizeSubscribe = opts.authorizeSubscribe
   this.authorizeForward = opts.authorizeForward
@@ -317,11 +323,11 @@ Aedes.prototype.close = function (cb = noop) {
 
 Aedes.prototype.version = require('./package.json').version
 
-function defaultPreConnect (client, packet, callback) {
+function defaultPreConnect (client, callback) {
   callback(null, true)
 }
 
-function defaultAuthenticate (client, username, password, callback) {
+function defaultAuthenticate (client, packet, callback) {
   callback(null, true)
 }
 
@@ -336,7 +342,7 @@ function defaultAuthorizeSubscribe (client, sub, callback) {
 function defaultAuthorizeForward (client, packet) {
   return packet
 }
-
+// TODO: swap param, align pratice
 function defaultPublished (packet, client, callback) {
   callback(null)
 }

@@ -22,14 +22,16 @@ export enum AuthErrorCode {
 
 export type AuthenticateError = Error & { returnCode: AuthErrorCode }
 
-type PreConnectHandler = (client: Client, packet: ConnectPacket, callback: (error: Error | null, success: boolean) => void) => void
+type PreConnectHandler = (client: Client, callback: (error: Error | null, success: boolean) => void) => void
 
 type AuthenticateHandler = (
   client: Client,
-  username: Readonly<string>,
-  password: Readonly<Buffer>,
+  packet: Readonly<ConnectPacket>,
   done: (error: AuthenticateError | null, success: boolean | null) => void
 ) => void
+
+type ConnectPacketParameters = Pick<ConnectPacket, "clean" | "keepalive" | "will">
+type AuthorizeConnectHandeler = (client: Client, packet: ConnectPacketParameters, callback: (error: Error | null, success: boolean) => void) => void
 
 type AuthorizePublishHandler = (client: Client, packet: PublishPacket, callback: (error?: Error | null) => void) => void
 
@@ -50,6 +52,7 @@ export interface AedesOptions {
   maxClientsIdLength?: number
   preConnect?: PreConnectHandler
   authenticate?: AuthenticateHandler
+  authorizeConnect?: AuthorizeConnectHandeler | null
   authorizePublish?: AuthorizePublishHandler
   authorizeSubscribe?: AuthorizeSubscribeHandler
   authorizeForward?: AuthorizeForwardHandler

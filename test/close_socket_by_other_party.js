@@ -10,7 +10,7 @@ test('aedes is closed before client authenticate returns', function (t) {
 
   const evt = new EventEmitter()
   const broker = aedes({
-    authenticate: (client, username, password, done) => {
+    authenticate: (client, packet, done) => {
       evt.emit('AuthenticateBegin', client)
       setTimeout(function () {
         done(null, true)
@@ -41,7 +41,7 @@ test('client is closed before authenticate returns', function (t) {
 
   const evt = new EventEmitter()
   const broker = aedes({
-    authenticate: async (client, username, password, done) => {
+    authenticate: async (client, packet, done) => {
       evt.emit('AuthenticateBegin', client)
       setTimeout(function () {
         done(null, true)

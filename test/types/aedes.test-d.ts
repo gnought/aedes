@@ -5,7 +5,8 @@ import type {
   Brokers,
   AuthenticateError,
   Client,
-  Connection
+  Connection,
+  ConnectPacketParameters
 } from '../../aedes'
 import { Server } from '../../aedes'
 import type { AedesPublishPacket, ConnackPacket, ConnectPacket, PingreqPacket, PublishPacket, PubrelPacket, Subscription, SubscribePacket, UnsubscribePacket } from '../../types/packet'
@@ -17,7 +18,7 @@ const broker = Server({
   heartbeatInterval: 60000,
   connectTimeout: 30000,
   maxClientsIdLength: 23,
-  preConnect: (client: Client, packet: ConnectPacket, callback) => {
+  preConnect: (client: Client, callback) => {
     if (client.req) {
       callback(new Error('not websocket stream'), false)
     }
@@ -27,8 +28,8 @@ const broker = Server({
       callback(new Error('connection error'), false)
     }
   },
-  authenticate: (client: Client, username: Readonly<string>, password: Readonly<Buffer>, callback) => {
-    if (username === 'test' && password === Buffer.from('test') && client.version === 4) {
+  authenticate: (client: Client, packet: Readonly<ConnectPacket>, callback) => {
+    if (packet.username === 'test' && packet.password === Buffer.from('test') && client.version === 4) {
       callback(null, true)
     } else {
       const error = new Error() as AuthenticateError
@@ -36,6 +37,16 @@ const broker = Server({
 
       callback(error, false)
     }
+  },
+  authorizeConnect: (client: Client, packet: ConnectPacketParameters, callback) => {
+    if (client.id === 'test') {
+      packet.clean = true
+      packet.keepalive = 60
+      packet.will = { topic: 'hello', payload: Buffer.from('world') }
+
+      callback(null, true)
+    }
+    callback(new Error('error'), false)
   },
   authorizePublish: (client: Client, packet: PublishPacket, callback) => {
     if (packet.topic === 'aaaa') {
